@@ -34,6 +34,12 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1f668dd3-3acf-46c6-a7b7-c457eb5c2ddf"
+      }
+    },
+    "owner": "sebryu"
   }
 }

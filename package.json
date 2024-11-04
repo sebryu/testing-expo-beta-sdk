@@ -21,6 +21,7 @@
     "expo": "~52.0.0-preview.5",
     "expo-blur": "~14.0.1",
     "expo-constants": "~17.0.1",
+    "expo-dev-client": "~5.0.0-preview.2",
     "expo-font": "~13.0.0",
     "expo-haptics": "~14.0.0",
     "expo-linking": "~7.0.2",
