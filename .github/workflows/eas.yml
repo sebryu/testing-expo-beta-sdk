@@ -1,0 +1,46 @@
+name: Preview with EAS
+
+on:
+  pull_request:
+
+jobs:
+  preview-with-eas:
+    name: Preview with EAS
+    runs-on: ubuntu-latest
+    concurrency: fingerprint-${{ github.run_id }}
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: write
+      packages: write
+    steps:
+      - name: 🔍 Check for EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "You must provide an EXPO_TOKEN secret linked to this project's Expo account in this repo's secrets. Learn more: https://docs.expo.dev/eas-update/github-actions"
+            exit 1
+          fi
+
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v4
+
+      - name: 🌿 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+
+      - name: Λ Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📦 Install dependencies
+        run: yarn install --immutable
+
+      - name: 🚀 Create Preview with EAS Build and Update
+        uses: expo/expo-github-action/continuous-deploy-fingerprint@main
+        with:
+          profile: development
+          branch: development
