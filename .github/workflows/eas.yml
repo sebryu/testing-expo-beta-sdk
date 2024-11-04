@@ -2,6 +2,7 @@ name: Preview with EAS
 
 on:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   preview-with-eas:
