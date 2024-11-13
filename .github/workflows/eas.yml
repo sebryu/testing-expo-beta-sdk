@@ -43,5 +43,6 @@ jobs:
       - name: 🚀 Create Preview with EAS Build and Update
         uses: expo/expo-github-action/continuous-deploy-fingerprint@main
         with:
+          working-directory: packages/AppOne
           profile: development
           branch: development
