@@ -118,6 +118,13 @@ jobs:
           eas build --local --non-interactive --output=./app-build --platform android --profile preview
         working-directory: packages/AppOne
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.event_name == 'pull_request' && steps.fingerprint.outputs.fingerprint-diff != '[]' }}
+        working-directory: packages/AppOne
+        with:
+          name: android-app-build
+          path: ./app-build
+
   build-app-one-local-ios:
     runs-on: macos-latest
     # REQUIRED: limit concurrency when pushing main(default) branch to prevent conflict for this action to update its fingerprint database
@@ -156,3 +163,9 @@ jobs:
           eas build --local --non-interactive --output=./app-build-ios --platform ios --profile preview
         working-directory: packages/AppOne
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.event_name == 'pull_request' && steps.fingerprint.outputs.fingerprint-diff != '[]' }}
+        working-directory: packages/AppOne
+        with:
+          name: ios-app-build
+          path: ./app-build-ios
