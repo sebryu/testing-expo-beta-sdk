@@ -39,6 +39,7 @@ jobs:
           command: eas build --profile development --platform all
           working-directory: packages/AppOne
           fingerprint-db-cache-key: fingerprint-db-app-one
+          comment-id: previewBuildDev:{projectId}
 
   build-app-one-preview:
     runs-on: ubuntu-latest
@@ -71,6 +72,7 @@ jobs:
           command: eas build --profile preview --platform all
           working-directory: packages/AppOne
           fingerprint-db-cache-key: fingerprint-db-app-one-preview
+          comment-id: previewBuildPrev:{projectId}
 
   build-app-one-local-android:
     runs-on: ubuntu-latest
