@@ -142,4 +142,4 @@ jobs:
       - name: 👷 Build app
         if: ${{ github.event_name == 'pull_request' && steps.fingerprint.outputs.fingerprint-diff != '[]' }}
         run: |
-        eas build --local --non-interactive --output=./app-build-ios --platform ios --profile preview
+          eas build --local --non-interactive --output=./app-build-ios --platform ios --profile preview
