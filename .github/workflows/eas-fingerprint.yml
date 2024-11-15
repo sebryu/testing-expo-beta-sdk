@@ -102,11 +102,13 @@ jobs:
         uses: expo/expo-github-action/fingerprint@main
         with:
           working-directory: packages/AppOne
+          fingerprint-db-cache-key: fingerprint-db-app-one-local-android
 
       - name: 👷 Build app
         if: ${{ github.event_name == 'pull_request' && steps.fingerprint.outputs.fingerprint-diff != '[]' }}
         run: |
           eas build --local --non-interactive --output=./app-build --platform android --profile preview
+        working-directory: packages/AppOne
 
   build-app-one-local-ios:
     runs-on: macos-latest
@@ -138,8 +140,11 @@ jobs:
         uses: expo/expo-github-action/fingerprint@main
         with:
           working-directory: packages/AppOne
+          fingerprint-db-cache-key: fingerprint-db-app-one-local-ios
 
       - name: 👷 Build app
         if: ${{ github.event_name == 'pull_request' && steps.fingerprint.outputs.fingerprint-diff != '[]' }}
         run: |
           eas build --local --non-interactive --output=./app-build-ios --platform ios --profile preview
+        working-directory: packages/AppOne
+
