@@ -1,0 +1,158 @@
+name: Build preview for pull requests
+
+on:
+  push:
+    # REQUIRED: push main(default) branch is necessary for this action to update its fingerprint database
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  build-app-one:
+    runs-on: ubuntu-latest
+    # REQUIRED: limit concurrency when pushing main(default) branch to prevent conflict for this action to update its fingerprint database
+    concurrency: fingerprint-one-${{ github.event_name != 'pull_request' && 'main' || github.run_id }}
+    permissions:
+      # REQUIRED: Allow comments of PRs
+      pull-requests: write # Allow comments on PRs
+      # REQUIRED: Allow updating fingerprint in acton caches
+      actions: write
+      # Following permissions are required for private repos
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗  Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Create preview builds if needed
+        uses: expo/expo-github-action/preview-build@main
+        with:
+          command: eas build --profile development --platform all
+          working-directory: packages/AppOne
+          fingerprint-db-cache-key: fingerprint-db-app-one
+          comment-id: previewBuildDev:{projectId}
+
+  build-app-one-preview:
+    runs-on: ubuntu-latest
+    # REQUIRED: limit concurrency when pushing main(default) branch to prevent conflict for this action to update its fingerprint database
+    concurrency: fingerprint-one-preview-${{ github.event_name != 'pull_request' && 'main' || github.run_id }}
+    permissions:
+      # REQUIRED: Allow comments of PRs
+      pull-requests: write # Allow comments on PRs
+      # REQUIRED: Allow updating fingerprint in acton caches
+      actions: write
+      # Following permissions are required for private repos
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗  Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Create preview builds if needed
+        uses: expo/expo-github-action/preview-build@main
+        with:
+          command: eas build --profile preview --platform all
+          working-directory: packages/AppOne
+          fingerprint-db-cache-key: fingerprint-db-app-one-preview
+          comment-id: previewBuildPrev:{projectId}
+
+  build-app-one-local-android:
+    runs-on: ubuntu-latest
+    # REQUIRED: limit concurrency when pushing main(default) branch to prevent conflict for this action to update its fingerprint database
+    concurrency: fingerprint-one-local-${{ github.event_name != 'pull_request' && 'main' || github.run_id }}
+    permissions:
+      # REQUIRED: Allow comments of PRs
+      pull-requests: write # Allow comments on PRs
+      # REQUIRED: Allow updating fingerprint in acton caches
+      actions: write
+      # Following permissions are required for private repos
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗  Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Check fingerprint
+        id: fingerprint
+        uses: expo/expo-github-action/fingerprint@main
+        with:
+          working-directory: packages/AppOne
+          fingerprint-db-cache-key: fingerprint-db-app-one-local-android
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 👷 Build app
+        if: ${{ github.event_name == 'pull_request' && steps.fingerprint.outputs.fingerprint-diff != '[]' }}
+        run: |
+          eas build --local --non-interactive --output=./app-build --platform android --profile preview
+        working-directory: packages/AppOne
+
+  build-app-one-local-ios:
+    runs-on: macos-latest
+    # REQUIRED: limit concurrency when pushing main(default) branch to prevent conflict for this action to update its fingerprint database
+    concurrency: fingerprint-one-local-ios-${{ github.event_name != 'pull_request' && 'main' || github.run_id }}
+    permissions:
+      # REQUIRED: Allow comments of PRs
+      pull-requests: write # Allow comments on PRs
+      # REQUIRED: Allow updating fingerprint in acton caches
+      actions: write
+      # Following permissions are required for private repos
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗  Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Check fingerprint
+        id: fingerprint
+        uses: expo/expo-github-action/fingerprint@main
+        with:
+          working-directory: packages/AppOne
+          fingerprint-db-cache-key: fingerprint-db-app-one-local-ios
+
+      - name: 👷 Build app
+        if: ${{ github.event_name == 'pull_request' && steps.fingerprint.outputs.fingerprint-diff != '[]' }}
+        run: |
+          eas build --local --non-interactive --output=./app-build-ios --platform ios --profile preview
+        working-directory: packages/AppOne
+
