@@ -120,10 +120,9 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         if: ${{ github.event_name == 'pull_request' && steps.fingerprint.outputs.fingerprint-diff != '[]' }}
-        working-directory: packages/AppOne
         with:
           name: android-app-build
-          path: ./app-build
+          path: packages/AppOne/app-build
 
   build-app-one-local-ios:
     runs-on: macos-latest
@@ -165,7 +164,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         if: ${{ github.event_name == 'pull_request' && steps.fingerprint.outputs.fingerprint-diff != '[]' }}
-        working-directory: packages/AppOne
         with:
           name: ios-app-build
-          path: ./app-build-ios
+          path: packages/AppOne/app-build-ios
