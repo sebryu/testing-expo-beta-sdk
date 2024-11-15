@@ -104,6 +104,12 @@ jobs:
           working-directory: packages/AppOne
           fingerprint-db-cache-key: fingerprint-db-app-one-local-android
 
+      - name: Setup Java 17
+        uses: actions/setup-java@v3
+        with:
+        distribution: 'temurin'
+        java-version: '17'
+
       - name: 👷 Build app
         if: ${{ github.event_name == 'pull_request' && steps.fingerprint.outputs.fingerprint-diff != '[]' }}
         run: |
