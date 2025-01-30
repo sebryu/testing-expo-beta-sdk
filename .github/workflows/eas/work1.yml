@@ -1,0 +1,15 @@
+name: Use Hello Action 1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/actions/eas/**'
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Greeting from Hello Action 1
+        uses: ./.github/actions/eas/action1
