@@ -1,0 +1,8 @@
+name: 'Hello Action 2'
+description: 'Outputs a greeting from action 2'
+
+runs:
+  using: "composite"
+  steps:
+    - run: echo "Hello from Action 2"
+      shell: bash
