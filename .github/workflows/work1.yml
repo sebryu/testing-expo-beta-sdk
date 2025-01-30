@@ -3,8 +3,6 @@ name: Use Hello Action 1
 on:
   push:
     branches: [main]
-    paths:
-      - '.github/actions/eas/**'
 
 jobs:
   greet:
