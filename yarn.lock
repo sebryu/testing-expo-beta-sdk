@@ -6247,10 +6247,10 @@ react-native-helmet-async@2.0.4:
     react-fast-compare "^3.2.2"
     shallowequal "^1.1.0"
 
-react-native-onetrust-cmp@202405.2.0:
-  version "202405.2.0"
-  resolved "https://registry.yarnpkg.com/react-native-onetrust-cmp/-/react-native-onetrust-cmp-202405.2.0.tgz#9cd2f9dec93ed0b6c743c56a00fa9d33c458276a"
-  integrity sha512-dGXA10aTESCl9uIDqQ1fwSGiZKKTwHxh/qtmOgiq/T+6eRbrCv5ln6QbzsJFudgWbkQHQmVVhbnd+2xa+4cEYg==
+react-native-onetrust-cmp@202501.2.0:
+  version "202501.2.0"
+  resolved "https://registry.yarnpkg.com/react-native-onetrust-cmp/-/react-native-onetrust-cmp-202501.2.0.tgz#9e979a59dd93dde1e5b7d06cf2342cd70b7b6641"
+  integrity sha512-yE5yjmbxb3AQQywQJ5oBreW8PYr5zNZduSV4amnSg9TzsJ0kQXW5eBt/hpVC87fqw/KnX4LF7CXJo4gE8E52bQ==
 
 react-native-reanimated@~3.16.1:
   version "3.16.1"
