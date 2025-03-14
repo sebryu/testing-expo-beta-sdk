@@ -2,7 +2,7 @@ name: Use Hello Action 1
 
 on:
   push:
-    branches: [main]
+  pull_request:
 
 jobs:
   greet:
@@ -11,3 +11,19 @@ jobs:
       - uses: actions/checkout@v3
       - name: Greeting from Hello Action 1
         uses: ./.github/actions/eas/action1
+
+  example_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get commit message header
+        id: get_commit_message
+        run: |
+          COMMIT_MESSAGE_HEADER=$(git log -1 --pretty=%B | head -n 1)
+          echo "COMMIT_MESSAGE_HEADER=${COMMIT_MESSAGE_HEADER}" >> $GITHUB_ENV
+
+      - name: Use commit message header
+        run: |
+          echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
