@@ -52,7 +52,7 @@ jobs:
         th {background-color: #f2f2f2;}
         td {text-align: center;}
         </style>" > summary.html
-
+        echo "<!-- build-summary -->" >> summary.html
         echo "<h2>Build Summary</h2>" >> summary.html
         echo "<table>" >> summary.html
         echo "<tr><th>Platform</th><th>App</th><th>Status</th></tr>" >> summary.html
@@ -85,8 +85,10 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         issue-number: ${{ github.event.pull_request.number }}
         edit-mode: replace
-        body: |
-            <!-- build-summary -->
-            <h2>Build Summary</h2>
+        body-path: summary.html
 
-            $(cat summary.html)
+    - name: Upload summary.html as artifact
+      uses: actions/upload-artifact@v4
+      with:
+          name: summary-html
+          path: summary.html
