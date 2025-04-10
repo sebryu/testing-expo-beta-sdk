@@ -63,8 +63,7 @@ jobs:
                 if [ -f "$ART/result-${app}-${platform}.json" ]; then
                 LINK=$(jq -r .link $ART/result-${app}-${platform}.json)
                 STATUS=$(jq -r .status $ART/result-${app}-${platform}.json)
-                BADGE="https://img.shields.io/badge/${STATUS}-${STATUS == success && "green" || "red"}"
-                echo "<td><img src='${LINK}/qr.png' width=100><br><a href='${LINK}'>Download</a><br><img src='${BADGE}'></td>" >> summary.html
+                echo "<td><img src='${LINK}/qr.png' width=100><br><a href='${LINK}'>Download</a><br>${STATUS}</td>" >> summary.html
                 else
                 echo "<td>❌</td>" >> summary.html
                 fi
