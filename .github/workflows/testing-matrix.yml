@@ -1,13 +1,12 @@
-name: Matrix Build & Fancy Summary
+name: Matrix QR Builder
+
 permissions:
-  pull-requests: write  # for PR comments
-  contents: read        # always safe to have this
+  pull-requests: write
+  contents: read
 
 on:
-    push:
-    workflow_dispatch:
-    pull_request:
-        types: [opened, synchronize]
+  workflow_dispatch:
+  pull_request:
 
 jobs:
   build:
@@ -16,71 +15,87 @@ jobs:
       matrix:
         platform: [ios, android]
         app: [AppA, AppB, AppC, AppD]
-    name: Build ${{ matrix.app }} - ${{ matrix.platform }}
+
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Generate QR & result
+      - name: Generate link
+        id: generate
         run: |
-          mkdir output
-          echo "Dummy QR for ${{ matrix.app }} ${{ matrix.platform }}" > output/qr-${{ matrix.app }}-${{ matrix.platform }}.png
-          echo "{ \"status\": \"success\", \"link\": \"https://example.com/${{ matrix.app }}/${{ matrix.platform }}\" }" > output/result-${{ matrix.app }}-${{ matrix.platform }}.json
+          LINK="exp+${{ matrix.platform }}-${{ matrix.app }}://expo-development-client/?source=${{ matrix.app }}&url=https://u.expo.dev/${{ matrix.app }}"
+          echo "link=$LINK" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: result-${{ matrix.app }}-${{ matrix.platform }}
-          path: output/*
-
-
-  summary:
-    runs-on: ubuntu-latest
-    needs: build
-    if: always()
-    steps:
-      - uses: actions/download-artifact@v4
-
-      - name: Generate HTML Summary
+      - name: Install qrencode
         run: |
-            echo "<h2>Build Summary</h2>" > summary.html
-            echo "<table border=1 cellspacing=0 cellpadding=5>" >> summary.html
+          sudo apt-get update -y
+          sudo apt-get install -y qrencode
 
-            # Find all platforms
-            PLATFORMS=$(find . -type d -name 'result-*' | sed -E 's|.*/result-.*-(.*)|\1|' | sort -u)
-            APPS=$(find . -type d -name 'result-*' | sed -E 's|.*/result-(.*)-.*|\1|' | sort -u)
+      - name: Generate SVG QR Code
+        run: |
+          mkdir -p artifacts
+          qrencode -t SVG -o "artifacts/qr-${{ matrix.platform }}-${{ matrix.app }}.svg" "${{ steps.generate.outputs.link }}"
 
-            # Header row
-            echo -n "<tr><th></th>" >> summary.html
-            for platform in $PLATFORMS; do
-            echo -n "<th>$platform</th>" >> summary.html
-            done
-            echo "</tr>" >> summary.html
+      - name: Create result.json
+        run: |
+          jq -n --arg platform "${{ matrix.platform }}" \
+                --arg app "${{ matrix.app }}" \
+                --arg link "${{ steps.generate.outputs.link }}" \
+                --arg status "success" \
+                '{
+                  platform: $platform,
+                  app: $app,
+                  link: $link,
+                  status: $status
+                }' > "artifacts/result-${{ matrix.platform }}-${{ matrix.app }}.json"
 
-            # Data rows
-            for app in $APPS; do
-            echo "<tr><th>$app</th>" >> summary.html
-            for platform in $PLATFORMS; do
-                ART=result-${app}-${platform}
-                if [ -f "$ART/result-${app}-${platform}.json" ]; then
-                LINK=$(jq -r .link $ART/result-${app}-${platform}.json)
-                STATUS=$(jq -r .status $ART/result-${app}-${platform}.json)
-                echo "<td><img src='${LINK}/qr.png' width=100><br><a href='${LINK}'>Download</a><br>${STATUS}</td>" >> summary.html
-                else
-                echo "<td>❌</td>" >> summary.html
-                fi
-            done
-            echo "</tr>" >> summary.html
-            done
-
-            echo "</table>" >> summary.html
-
-      - name: Upload summary.html artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-summary
-          path: summary.html
+          retention-days: 1
+          name: result-${{ matrix.platform }}-${{ matrix.app }}
+          path: artifacts/
 
-      - name: Add to GitHub Summary
-        run: cat summary.html >> $GITHUB_STEP_SUMMARY
+  summarize:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all_artifacts
+
+      - name: Generate HTML summary
+        id: generate
+        run: |
+          echo "<h2>🚀 Build Summary</h2>" > summary.html
+          echo "<style>table { border-collapse: collapse; } td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }</style>" >> summary.html
+          echo "<table>" >> summary.html
+          echo "<tr><th>App \\ Platform</th><th>iOS</th><th>Android</th></tr>" >> summary.html
+
+          for app in AppA AppB AppC AppD; do
+            echo "<tr><th>$app</th>" >> summary.html
+            for platform in ios android; do
+              SVG_PATH="all_artifacts/result-$platform-$app/qr-$platform-$app.svg"
+              JSON_PATH="all_artifacts/result-$platform-$app/result-$platform-$app.json"
+
+              if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
+                LINK=$(jq -r '.link' "$JSON_PATH")
+                STATUS=$(jq -r '.status' "$JSON_PATH")
+                BADGE="<img src='https://img.shields.io/badge/status-${STATUS}-green'>"
+                INLINE_SVG=$(cat "$SVG_PATH" | tr -d '\n')
+                CELL="<td><a href='$LINK'>$LINK</a><br>$BADGE<br>$INLINE_SVG</td>"
+              else
+                CELL="<td>❌ Missing</td>"
+              fi
+
+              echo "$CELL" >> summary.html
+            done
+            echo "</tr>" >> summary.html
+          done
+
+          echo "</table>" >> summary.html
+
+      - name: Show Summary
+        run: cat summary.html >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create or update PR comment
         if: github.event_name == 'pull_request'
@@ -92,3 +107,9 @@ jobs:
           body-path: summary.html
         #   comment-id: ${{ steps.comment-id.outputs.comment-id }} # optional, if you use update logic
 
+
+      - name: Upload summary HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: summary-html
+          path: summary.html
