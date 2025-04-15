@@ -82,12 +82,13 @@ jobs:
       - name: Add to GitHub Summary
         run: cat summary.html >> $GITHUB_STEP_SUMMARY
 
-      - name: Create or Update PR Comment
-        if: github.event.pull_request
+      - name: Create or update PR comment
+        if: github.event_name == 'pull_request'
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          edit-mode: replace
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            <!-- build-summary -->
-            $(cat summary.html)
+          body-path: summary.html
+        #   comment-id: ${{ steps.comment-id.outputs.comment-id }} # optional, if you use update logic
+
