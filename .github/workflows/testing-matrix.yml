@@ -1,7 +1,7 @@
-name: Matrix Build with QR Summary
+name: Matrix QR Builder
 
 permissions:
-  pull-requests: write  # needed for PR comment
+  pull-requests: write
   contents: read
 
 on:
@@ -17,87 +17,99 @@ jobs:
         app: [AppA, AppB, AppC, AppD]
 
     steps:
-      - name: Generate fake install URL
+      - name: Generate link
+        id: generate
         run: |
-          INSTALL_URL="https://example.com/install/${{ matrix.app }}/${{ matrix.platform }}?evenLongerQueryString=1234567890&something=else"
-          echo "INSTALL_URL=$INSTALL_URL" >> $GITHUB_ENV
+          LINK="exp+${{ matrix.platform }}-${{ matrix.app }}://expo-development-client/?source=${{ matrix.app }}&url=https://u.expo.dev/${{ matrix.app }}"
+          echo "link=$LINK" >> "$GITHUB_OUTPUT"
 
-      - name: Generate QR code PNG
+      - name: Install qrencode
         run: |
-          sudo apt-get update && sudo apt-get install -y qrencode
-          qrencode -o qr.png "$INSTALL_URL"
+          sudo apt-get update -y
+          sudo apt-get install -y qrencode
 
-      - name: Encode QR as base64
+      - name: Generate SVG QR Code
         run: |
-          BASE64_IMAGE=$(base64 -w 0 qr.png)
-          echo "BASE64_IMAGE=$BASE64_IMAGE" >> $GITHUB_ENV
+          mkdir -p artifacts
+          qrencode -t SVG -o "artifacts/qr-${{ matrix.platform }}-${{ matrix.app }}.svg" "${{ steps.generate.outputs.link }}"
 
-      - name: Write result.json
+      - name: Create result.json
         run: |
-          cat <<EOF > result.json
-          {
-            "platform": "${{ matrix.platform }}",
-            "app": "${{ matrix.app }}",
-            "url": "${INSTALL_URL}",
-            "qr_base64": "${BASE64_IMAGE}"
-          }
-          EOF
+          jq -n --arg platform "${{ matrix.platform }}" \
+                --arg app "${{ matrix.app }}" \
+                --arg link "${{ steps.generate.outputs.link }}" \
+                --arg status "success" \
+                '{
+                  platform: $platform,
+                  app: $app,
+                  link: $link,
+                  status: $status
+                }' > "artifacts/result-${{ matrix.platform }}-${{ matrix.app }}.json"
 
-      - name: Upload result.json artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 1
           name: result-${{ matrix.platform }}-${{ matrix.app }}
-          path: result.json
+          path: artifacts/
 
   summarize:
     needs: build
     runs-on: ubuntu-latest
-    if: always()
 
     steps:
-      - name: Download all result artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: results/
+          path: all_artifacts
 
-      - name: Generate summary.html
+      - name: Generate HTML summary
+        id: generate
         run: |
-          echo '<h2>Build Summary</h2>' > summary.html
-          echo '<table border="1" cellspacing="0" cellpadding="6"><tr><th>App / Platform</th><th>iOS</th><th>Android</th></tr>' >> summary.html
+          echo "<h2>🚀 Build Summary</h2>" > summary.html
+          echo "<style>table { border-collapse: collapse; } td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }</style>" >> summary.html
+          echo "<table>" >> summary.html
+          echo "<tr><th>App \\ Platform</th><th>iOS</th><th>Android</th></tr>" >> summary.html
 
           for app in AppA AppB AppC AppD; do
             echo "<tr><th>$app</th>" >> summary.html
             for platform in ios android; do
-              FILE="results/result-${platform}-${app}/result.json"
-              if [ -f "$FILE" ]; then
-                URL=$(jq -r '.url' "$FILE")
-                BASE64=$(jq -r '.qr_base64' "$FILE")
-                echo "<td><a href=\"$URL\">Install</a><br/><img src=\"data:image/png;base64,$BASE64\" width=\"120\"/><br/><img src='https://img.shields.io/badge/status-success-brightgreen' /></td>" >> summary.html
+              SVG_PATH="all_artifacts/result-$platform-$app/qr-$platform-$app.svg"
+              JSON_PATH="all_artifacts/result-$platform-$app/result-$platform-$app.json"
+
+              if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
+                LINK=$(jq -r '.link' "$JSON_PATH")
+                STATUS=$(jq -r '.status' "$JSON_PATH")
+                BADGE="<img src='https://img.shields.io/badge/status-${STATUS}-green'>"
+                INLINE_SVG=$(cat "$SVG_PATH" | tr -d '\n')
+                CELL="<td><a href='$LINK'>$LINK</a><br>$BADGE<br>$INLINE_SVG</td>"
               else
-                echo "<td>❌</td>" >> summary.html
+                CELL="<td>❌ Missing</td>"
               fi
+
+              echo "$CELL" >> summary.html
             done
             echo "</tr>" >> summary.html
           done
 
           echo "</table>" >> summary.html
 
-      - name: Post to GitHub Step Summary
-        run: cat summary.html >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload HTML summary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: summary-html
-          path: summary.html
+      - name: Show Summary
+        run: cat summary.html >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create or update PR comment
         if: github.event_name == 'pull_request'
         uses: peter-evans/create-or-update-comment@v4
         with:
-            token: ${{ secrets.GITHUB_TOKEN }}
-            edit-mode: replace
-            issue-number: ${{ github.event.pull_request.number }}
-            body-path: summary.html
-            #   comment-id: ${{ steps.comment-id.outputs.comment-id }} # optional, if you use update logic
+          token: ${{ secrets.GITHUB_TOKEN }}
+          edit-mode: replace
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: summary.html
+        #   comment-id: ${{ steps.comment-id.outputs.comment-id }} # optional, if you use update logic
 
+
+      - name: Upload summary HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: summary-html
+          path: summary.html
