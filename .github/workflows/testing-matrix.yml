@@ -23,15 +23,17 @@ jobs:
           LINK="exp+${{ matrix.platform }}-${{ matrix.app }}://expo-development-client/?source=${{ matrix.app }}&url=https://u.expo.dev/${{ matrix.app }}"
           echo "link=$LINK" >> "$GITHUB_OUTPUT"
 
-      - name: Install qrencode
+      - name: Install qrencode and svgo
         run: |
           sudo apt-get update -y
           sudo apt-get install -y qrencode
+          npm install -g svgo
 
       - name: Generate SVG QR Code
         run: |
           mkdir -p artifacts
           qrencode -t SVG -o "artifacts/qr-${{ matrix.platform }}-${{ matrix.app }}.svg" "${{ steps.generate.outputs.link }}"
+          svgo "artifacts/qr-${{ matrix.platform }}-${{ matrix.app }}.svg"
 
       - name: Create result.json
         run: |
