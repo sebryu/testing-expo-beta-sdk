@@ -99,6 +99,11 @@ jobs:
       - name: Show Summary
         run: cat summary.html >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Minify summary.html
+        run: |
+            npm install -g html-minifier-terser
+            html-minifier-terser summary.html --collapse-whitespace --remove-comments --minify-css true --minify-js true -o summary.min.html
+
       - name: Create or update PR comment
         if: github.event_name == 'pull_request'
         uses: peter-evans/create-or-update-comment@v4
@@ -115,3 +120,9 @@ jobs:
         with:
           name: summary-html
           path: summary.html
+
+      - name: Upload summary HTML
+        uses: actions/upload-artifact@v4
+        with:
+            name: summary-min-html
+            path: summary.min.html
