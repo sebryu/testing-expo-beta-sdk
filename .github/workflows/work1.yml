@@ -1,7 +1,6 @@
 name: Use Hello Action 1
 
 on:
-  push:
   pull_request:
   workflow_dispatch:
 
@@ -122,6 +121,6 @@ jobs:
         uses: expo/expo-github-action/preview@v8
         with:
           working-directory: packages/AppOne
-          command: eas update --platform android --channel development --message $COMMIT_MESSAGE_HEADER
+          command: eas update --platform android --channel development --message "$(echo $COMMIT_MESSAGE_HEADER)"
         env:
           NODE_OPTIONS: --max-old-space-size=4096
