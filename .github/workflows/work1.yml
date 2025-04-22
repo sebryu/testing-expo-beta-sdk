@@ -48,3 +48,26 @@ jobs:
         run: |
           echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
           echo "The other method resolves to: ${{ github.event.head_commit.message }}"
+
+  example_job_third:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Get commit message header
+        id: get_commit_message
+        run: |
+          COMMIT_MSG='Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"'
+          echo "COMMIT_MESSAGE_HEADER=$COMMIT_MSG" >> $GITHUB_ENV
+          echo "result=$COMMIT_MSG" >> "$GITHUB_OUTPUT"
+
+      - name: Use commit message header
+        run: |
+          echo "RESULT: ${{ steps.get_commit_message.outputs.result }}"
+          echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
+          echo "Next line fails?"
+          echo "The commit message header is: ${{ env.COMMIT_MESSAGE_HEADER }}"
+          echo "Finish"
