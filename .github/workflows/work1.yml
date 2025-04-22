@@ -64,22 +64,23 @@ jobs:
         id: get_commit_message
         run: |
           COMMIT_MSG='Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"'
+          echo "RESULT: $COMMIT_MSG"
           # echo "COMMIT_MESSAGE_HEADER=$COMMIT_MSG" >> $GITHUB_ENV
           echo "result=$COMMIT_MSG" >> "$GITHUB_OUTPUT"
 
-      - name: Use commit message header
-        run: |
-          echo "step 1 start"
-          echo "RESULT: ${{ steps.get_commit_message.outputs.result }}"
-          echo "Finish 1"
+      # - name: Use commit message header1
+      #   run: |
+      #     echo "step 1 start"
+      #     echo "RESULT: ${{ steps.get_commit_message.outputs.result }}"
+      #     echo "Finish 1"
 
-      - name: Use commit message header
+      - name: Use commit message header2
         run: |
           echo "step 2 start"
           echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
           echo "Finish 2"
 
-      - name: Use commit message header
+      - name: Use commit message header3
         run: |
           echo "step 3 start"
           echo "The commit message header is: ${{ env.COMMIT_MESSAGE_HEADER }}"
@@ -96,17 +97,19 @@ jobs:
       - name: Set commit message
         run: |
           COMMIT_MSG='Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"'
-          echo "COMMIT_MESSAGE_HEADER<<EOF" >> $GITHUB_ENV
-          echo "$COMMIT_MSG" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          {
+            echo "COMMIT_MESSAGE_HEADER<<EOF"
+            echo "$COMMIT_MSG"
+            echo "EOF"
+          } >> $GITHUB_ENV
 
-      - name: Use commit message header
+      - name: Use commit message header 2
         run: |
           echo "step 2 start"
           echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
           echo "Finish 2"
 
-      - name: Use commit message header
+      - name: Use commit message header 3
         run: |
           echo "step 3 start"
           echo "The commit message header is: ${{ env.COMMIT_MESSAGE_HEADER }}"
