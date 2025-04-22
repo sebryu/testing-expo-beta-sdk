@@ -109,8 +109,10 @@ jobs:
           echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
           echo "Finish 2"
 
-      - name: Use commit message header 3
-        run: |
-          echo "step 3 start"
-          echo "The commit message header is: ${{ env.COMMIT_MESSAGE_HEADER }}"
-          echo "Finish 3"
+      - name: Create preview
+        uses: expo/expo-github-action/preview@v8
+        with:
+          working-directory: packages/AppOne
+          command: eas update --platform android --channel development --message $COMMIT_MESSAGE_HEADER
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
