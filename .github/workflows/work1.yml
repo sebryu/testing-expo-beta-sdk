@@ -94,6 +94,12 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: 🏗  Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+            eas-version: latest
+            token: ${{ secrets.EXPO_TOKEN }}
+
       - name: Set commit message
         run: |
           COMMIT_MSG='Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"'
