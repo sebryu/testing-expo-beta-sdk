@@ -104,15 +104,19 @@ jobs:
           COMMIT_MSG='Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"'
           {
             echo "COMMIT_MESSAGE_HEADER<<EOF"
-            echo "eas update --platform android --channel development --message=\"$COMMIT_MSG\""
+            echo "$COMMIT_MSG" | sed 's/"/\\"/g'
             echo "EOF"
           } >> $GITHUB_ENV
+
+
 
       - name: Use commit message header 2
         run: |
           echo "step 2 start"
           echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
           echo "Finish 2"
+          # SAFE_MESSAGE=$(echo "${{ env.COMMIT_MESSAGE_HEADER }}" | sed 's/"/\\"/g')
+          # echo "SAFE_MESSAGE=$SAFE_MESSAGE" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: yarn install
@@ -121,6 +125,6 @@ jobs:
         uses: expo/expo-github-action/preview@v8
         with:
           working-directory: packages/AppOne
-          command: ${{ env.COMMIT_MESSAGE_HEADER }}
+          command: eas update --platform android --channel development --message "${{ env.COMMIT_MESSAGE_HEADER }}"
         env:
           NODE_OPTIONS: --max-old-space-size=4096
