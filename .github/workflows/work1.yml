@@ -50,6 +50,14 @@ jobs:
               echo "Matrix not toJson: ${{ needs.determine_matrix.outputs.matrix }}"
               echo "Matrix from json: ${{ fromJson(needs.determine_matrix.outputs.matrix) }}"
 
+          - name: jq 1
+            run: |
+              echo "${{ needs.determine_matrix.outputs.matrix }}" | jq -c '.'
+
+          - name: jq 2
+            run: |
+              echo "${{ toJson(needs.determine_matrix.outputs.matrix) }}" | jq -c '.'
+
   build_and_submit:
       needs: determine_matrix
       name: Build and Submit
@@ -61,7 +69,7 @@ jobs:
           packages: write
       strategy:
           fail-fast: false
-          matrix: ${{ needs.determine_matrix.outputs.matrix }}
+          matrix: ${{ fromJson(needs.determine_matrix.outputs.matrix) }}
 
       steps:
           - name: Print matrix
