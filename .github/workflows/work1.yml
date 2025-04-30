@@ -33,9 +33,9 @@ jobs:
 
                 return JSON.stringify(matrix);
 
-  build_and_submit:
+  log_matrix:
       needs: determine_matrix
-      name: Build and Submit
+      name: Log Matrix
       runs-on: ubuntu-latest
       permissions:
           pull-requests: write
@@ -48,8 +48,26 @@ jobs:
           - name: Print matrix
             run: |
               echo "Matrix not toJson: ${{ needs.determine_matrix.outputs.matrix }}"
-              echo "${{ needs.determine_matrix.outputs.matrix }}" | jq -c
-              echo "Matrix: ${{ toJson(needs.determine_matrix.outputs.matrix) }}"
+              echo "Matrix from json: ${{ fromJson(needs.determine_matrix.outputs.matrix) }}"
+
+  build_and_submit:
+      needs: determine_matrix
+      name: Build and Submit
+      runs-on: ubuntu-latest
+      permissions:
+          pull-requests: write
+          actions: write
+          contents: read
+          packages: write
+      strategy:
+          fail-fast: false
+          matrix: ${{ fromJson(needs.determine_matrix.outputs.matrix) }}
+
+      steps:
+          - name: Print matrix
+            run: |
+              echo "Matrix profile: ${{ matrix.profile }}"
+              echo "Matrix platform: ${{ matrix.platform }}"
 
   # example_job_second:
   #   runs-on: ubuntu-latest
