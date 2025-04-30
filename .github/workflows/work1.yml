@@ -31,7 +31,7 @@ jobs:
                 console.log('Matrix:', matrix);
                 console.log('Matrix JSON:', JSON.stringify(matrix));
 
-                return JSON.stringify(matrix);
+                return matrix;
 
   log_matrix:
       needs: determine_matrix
@@ -61,7 +61,7 @@ jobs:
           packages: write
       strategy:
           fail-fast: false
-          matrix: ${{ fromJson(needs.determine_matrix.outputs.matrix) }}
+          matrix: ${{ needs.determine_matrix.outputs.matrix }}
 
       steps:
           - name: Print matrix
