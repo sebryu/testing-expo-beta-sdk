@@ -28,11 +28,14 @@ jobs:
                 variants.push({ platform: 'android', profile: 'production-iap' });
                 // Set the final matrix
                 const matrix = { include: variants };
+                console.log('Matrix:', matrix);
+                console.log('Matrix JSON:', JSON.stringify(matrix));
+
                 return JSON.stringify(matrix);
 
   build_and_submit:
       needs: determine_matrix
-      name: Build and Submit ${{ github.event.inputs.app_name }} (${{ matrix.platform }}, ${{ matrix.profile }})
+      name: Build and Submit
       runs-on: ubuntu-latest
       permissions:
           pull-requests: write
@@ -40,14 +43,13 @@ jobs:
           contents: read
           packages: write
 
-      strategy:
-          fail-fast: false
-          matrix: ${{ fromJson(needs.determine_matrix.outputs.matrix) }}
 
       steps:
           - name: Print matrix
             run: |
-              echo "Matrix: ${{ toJson(matrix) }}"
+              echo "Matrix not toJson: ${{ needs.determine_matrix.outputs.matrix }}"
+              echo "${{ needs.determine_matrix.outputs.matrix }}" | jq -c
+              echo "Matrix: ${{ toJson(needs.determine_matrix.outputs.matrix) }}"
 
   # example_job_second:
   #   runs-on: ubuntu-latest
