@@ -12,119 +12,139 @@ jobs:
       - name: Greeting from Hello Action 1
         uses: ./.github/actions/eas/action1
 
-  example_job:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+  determine_matrix:
+      runs-on: ubuntu-latest
+      outputs:
+          matrix: ${{ steps.set-matrix.outputs.result }}
+      steps:
+          - name: Set Matrix
+            id: set-matrix
+            uses: actions/github-script@v7
+            with:
+              script: |
+                const variants = [];
+                variants.push({ platform: 'ios', profile: 'beta-automation' });
+                variants.push({ platform: 'android', profile: 'production' });
+                variants.push({ platform: 'android', profile: 'production-iap' });
+                // Set the final matrix
+                const matrix = { include: variants };
+                return JSON.stringify(matrix);
 
-      - name: Get commit message header
-        id: get_commit_message
-        run: |
-          COMMIT_MESSAGE_HEADER=$(git log -1 --pretty=%B | head -n 1)
-          echo "COMMIT_MESSAGE_HEADER=${COMMIT_MESSAGE_HEADER}" >> $GITHUB_ENV
+  build_and_submit:
+      needs: determine_matrix
+      name: Build and Submit ${{ github.event.inputs.app_name }} (${{ matrix.platform }}, ${{ matrix.profile }})
+      runs-on: ubuntu-latest
+      permissions:
+          pull-requests: write
+          actions: write
+          contents: read
+          packages: write
 
-      - name: Use commit message header
-        run: |
-          echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
-          echo "The other method resolves to: ${{ github.event.head_commit.message }}"
+      strategy:
+          fail-fast: false
+          matrix: ${{ fromJson(needs.determine_matrix.outputs.matrix) }}
 
-  example_job_second:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
+      steps:
+          - name: Print matrix
+            run: |
+              echo "Matrix: ${{ toJson(matrix) }}"
 
-      - name: Get commit message header
-        id: get_commit_message
-        run: |
-          COMMIT_MESSAGE_HEADER=$(git log --format=%B -n 1 ${{ github.event.pull_request.head.sha }})
-          echo "COMMIT_MESSAGE_HEADER=${COMMIT_MESSAGE_HEADER}" >> $GITHUB_ENV
+  # example_job_second:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 2
 
-      - name: Use commit message header
-        run: |
-          echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
-          echo "The other method resolves to: ${{ github.event.head_commit.message }}"
+  #     - name: Get commit message header
+  #       id: get_commit_message
+  #       run: |
+  #         COMMIT_MESSAGE_HEADER=$(git log --format=%B -n 1 ${{ github.event.pull_request.head.sha }})
+  #         echo "COMMIT_MESSAGE_HEADER=${COMMIT_MESSAGE_HEADER}" >> $GITHUB_ENV
 
-  example_job_third:
-    runs-on: ubuntu-latest
-    env:
-      COMMIT_MESSAGE_HEADER: Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"
+  #     - name: Use commit message header
+  #       run: |
+  #         echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
+  #         echo "The other method resolves to: ${{ github.event.head_commit.message }}"
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
+  # example_job_third:
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     COMMIT_MESSAGE_HEADER: Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"
 
-      - name: Get commit message header
-        id: get_commit_message
-        run: |
-          COMMIT_MSG='Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"'
-          echo "RESULT: $COMMIT_MSG"
-          # echo "COMMIT_MESSAGE_HEADER=$COMMIT_MSG" >> $GITHUB_ENV
-          echo "result=$COMMIT_MSG" >> "$GITHUB_OUTPUT"
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 2
 
-      # - name: Use commit message header1
-      #   run: |
-      #     echo "step 1 start"
-      #     echo "RESULT: ${{ steps.get_commit_message.outputs.result }}"
-      #     echo "Finish 1"
+  #     - name: Get commit message header
+  #       id: get_commit_message
+  #       run: |
+  #         COMMIT_MSG='Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"'
+  #         echo "RESULT: $COMMIT_MSG"
+  #         # echo "COMMIT_MESSAGE_HEADER=$COMMIT_MSG" >> $GITHUB_ENV
+  #         echo "result=$COMMIT_MSG" >> "$GITHUB_OUTPUT"
 
-      - name: Use commit message header2
-        run: |
-          echo "step 2 start"
-          echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
-          echo "Finish 2"
+  #     # - name: Use commit message header1
+  #     #   run: |
+  #     #     echo "step 1 start"
+  #     #     echo "RESULT: ${{ steps.get_commit_message.outputs.result }}"
+  #     #     echo "Finish 1"
 
-      - name: Use commit message header3
-        run: |
-          echo "step 3 start"
-          echo "The commit message header is: ${{ env.COMMIT_MESSAGE_HEADER }}"
-          echo "Finish 3"
+  #     - name: Use commit message header2
+  #       run: |
+  #         echo "step 2 start"
+  #         echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
+  #         echo "Finish 2"
 
-  example_job_4:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
+  #     - name: Use commit message header3
+  #       run: |
+  #         echo "step 3 start"
+  #         echo "The commit message header is: ${{ env.COMMIT_MESSAGE_HEADER }}"
+  #         echo "Finish 3"
 
-      - name: 🏗  Setup EAS
-        uses: expo/expo-github-action@v8
-        with:
-            eas-version: latest
-            token: ${{ secrets.EXPO_TOKEN }}
+  # example_job_4:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 2
 
-      - name: Set commit message
-        run: |
-          COMMIT_MSG='Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"'
-          {
-            echo "COMMIT_MESSAGE_HEADER<<EOF"
-            echo "$COMMIT_MSG" | sed 's/"/\\"/g'
-            echo "EOF"
-          } >> $GITHUB_ENV
+  #     - name: 🏗  Setup EAS
+  #       uses: expo/expo-github-action@v8
+  #       with:
+  #           eas-version: latest
+  #           token: ${{ secrets.EXPO_TOKEN }}
+
+  #     - name: Set commit message
+  #       run: |
+  #         COMMIT_MSG='Revert "[MOB] (PMO-16142) - Fix delay when revisiting tabs (#25207)"'
+  #         {
+  #           echo "COMMIT_MESSAGE_HEADER<<EOF"
+  #           echo "$COMMIT_MSG" | sed 's/"/\\"/g'
+  #           echo "EOF"
+  #         } >> $GITHUB_ENV
 
 
 
-      - name: Use commit message header 2
-        run: |
-          echo "step 2 start"
-          echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
-          echo "Finish 2"
-          # SAFE_MESSAGE=$(echo "${{ env.COMMIT_MESSAGE_HEADER }}" | sed 's/"/\\"/g')
-          # echo "SAFE_MESSAGE=$SAFE_MESSAGE" >> "$GITHUB_ENV"
+  #     - name: Use commit message header 2
+  #       run: |
+  #         echo "step 2 start"
+  #         echo "The commit message header is: $COMMIT_MESSAGE_HEADER"
+  #         echo "Finish 2"
+  #         # SAFE_MESSAGE=$(echo "${{ env.COMMIT_MESSAGE_HEADER }}" | sed 's/"/\\"/g')
+  #         # echo "SAFE_MESSAGE=$SAFE_MESSAGE" >> "$GITHUB_ENV"
 
-      - name: Install dependencies
-        run: yarn install
+  #     - name: Install dependencies
+  #       run: yarn install
 
-      - name: Create preview
-        uses: expo/expo-github-action/preview@v8
-        with:
-          working-directory: packages/AppOne
-          command: eas update --platform android --channel development --message "${{ env.COMMIT_MESSAGE_HEADER }}"
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
+  #     - name: Create preview
+  #       uses: expo/expo-github-action/preview@v8
+  #       with:
+  #         working-directory: packages/AppOne
+  #         command: eas update --platform android --channel development --message "${{ env.COMMIT_MESSAGE_HEADER }}"
+  #       env:
+  #         NODE_OPTIONS: --max-old-space-size=4096
