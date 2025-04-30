@@ -23,9 +23,9 @@ jobs:
             with:
               script: |
                 const variants = [];
-                variants.push({ platform: 'ios', profile: 'beta-automation' });
+                variants.push({ platform: 'ios', profile: 'betaautomation' });
                 variants.push({ platform: 'android', profile: 'production' });
-                variants.push({ platform: 'android', profile: 'production-iap' });
+                variants.push({ platform: 'android', profile: 'productioniap' });
                 // Set the final matrix
                 const matrix = { include: variants };
                 console.log('Matrix:', matrix);
