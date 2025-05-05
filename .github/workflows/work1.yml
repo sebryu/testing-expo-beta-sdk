@@ -18,10 +18,10 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha
             };
-            const something = github.rest.git.createRef({
+            const something = await github.rest.git.createRef({
               ...refObject,
               ref: `refs/tags/mojtag/${context.sha}`,
-            });
+            })
 
             console.log(`Adding git tag 🎯.`, something);
 
