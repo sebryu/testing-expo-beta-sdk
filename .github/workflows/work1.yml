@@ -7,6 +7,11 @@ on:
 jobs:
   greet:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      actions: write
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v3
       - name: Greeting from Hello Action 1
@@ -20,7 +25,7 @@ jobs:
             };
             const something = await github.rest.git.createRef({
               ...refObject,
-              ref: `refs/tags/mojtag/${context.sha}`,
+              ref: `refs/tags/mojtag/2${context.sha}`,
             })
 
             console.log(`Adding git tag 🎯.`, something);
