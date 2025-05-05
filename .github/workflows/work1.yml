@@ -20,7 +20,7 @@ jobs:
             };
             const something = github.rest.git.createRef({
               ...refObject,
-              ref: `refs/tags/mojtag/${context.context.sha}`,
+              ref: `refs/tags/mojtag/${context.sha}`,
             });
 
             console.log(`Adding git tag 🎯.`, something);
