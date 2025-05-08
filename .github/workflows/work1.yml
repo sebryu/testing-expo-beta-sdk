@@ -14,19 +14,26 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v3
-      - name: Greeting from Hello Action 1
+      - name: Get version from action1
+        id: get-metadata
+        uses: ./.github/actions/eas/action1
+      - name: Print version from action1
+        run: |
+          echo "The version is ${{ steps.get-metadata.outputs.version }}"
+      - name: Github script to create tags
         uses: actions/github-script@v7
         with:
           script: |
+
             const refObject = {
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: context.sha
             };
-            const something = await github.rest.git.createRef({
-              ...refObject,
-              ref: `refs/tags/mojtag/2${context.sha}`,
-            })
+            # const something = await github.rest.git.createRef({
+            #   ...refObject,
+            #   ref: `refs/tags/mojtag/2${context.sha}`,
+            # })
 
             console.log(`Adding git tag 🎯.`, something);
 
