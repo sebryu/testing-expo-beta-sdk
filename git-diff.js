@@ -2,11 +2,11 @@ const cp = require("child_process");
 
 function execCommand(command) {
     return new Promise((resolve, reject) => {
-    execCb(command, (err, stdout, stderr) => {
-        if (err) return reject(err);
-        if (stderr) return reject(new Error(stderr));
-        resolve(stdout);
-    });
+        cp.exec(command, (err, stdout, stderr) => {
+            if (err) return reject(err);
+            if (stderr) return reject(new Error(stderr));
+            resolve(stdout);
+        });
     });
 }
 async function run() {

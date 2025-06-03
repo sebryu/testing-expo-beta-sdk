@@ -39,8 +39,7 @@ jobs:
             #   ...refObject,
             #   ref: `refs/tags/mojtag/2${context.sha}`,
             # })
-
-            console.log(`Adding git tag 🎯.`, something);
+            # console.log(`Adding git tag 🎯.`, something);
 
   determine_matrix:
       runs-on: ubuntu-latest
