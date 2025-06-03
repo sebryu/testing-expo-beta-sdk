@@ -1,0 +1,128 @@
+name: Matrix QR Builder
+
+permissions:
+  pull-requests: write
+  contents: read
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ios, android]
+        app: [AppA, AppB, AppC, AppD]
+
+    steps:
+      - name: Generate link
+        id: generate
+        run: |
+          LINK="exp+${{ matrix.platform }}-${{ matrix.app }}://expo-development-client/?source=${{ matrix.app }}&url=https://u.expo.dev/${{ matrix.app }}"
+          echo "link=$LINK" >> "$GITHUB_OUTPUT"
+
+      - name: Install qrencode and svgo
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y qrencode
+          npm install -g svgo
+
+      - name: Generate SVG QR Code
+        run: |
+          mkdir -p artifacts
+          qrencode -t SVG -o "artifacts/qr-${{ matrix.platform }}-${{ matrix.app }}.svg" "${{ steps.generate.outputs.link }}"
+          svgo "artifacts/qr-${{ matrix.platform }}-${{ matrix.app }}.svg"
+
+      - name: Create result.json
+        run: |
+          jq -n --arg platform "${{ matrix.platform }}" \
+                --arg app "${{ matrix.app }}" \
+                --arg link "${{ steps.generate.outputs.link }}" \
+                --arg status "success" \
+                '{
+                  platform: $platform,
+                  app: $app,
+                  link: $link,
+                  status: $status
+                }' > "artifacts/result-${{ matrix.platform }}-${{ matrix.app }}.json"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          name: result-${{ matrix.platform }}-${{ matrix.app }}
+          path: artifacts/
+
+  summarize:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all_artifacts
+
+      - name: Generate HTML summary
+        id: generate
+        run: |
+          echo "<h2>🚀 Build Summary</h2>" > summary.html
+          echo "<style>table { border-collapse: collapse; } td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }</style>" >> summary.html
+          echo "<table>" >> summary.html
+          echo "<tr><th>App \\ Platform</th><th>iOS</th><th>Android</th></tr>" >> summary.html
+
+          for app in AppA AppB AppC AppD; do
+            echo "<tr><th>$app</th>" >> summary.html
+            for platform in ios android; do
+              SVG_PATH="all_artifacts/result-$platform-$app/qr-$platform-$app.svg"
+              JSON_PATH="all_artifacts/result-$platform-$app/result-$platform-$app.json"
+
+              if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
+                LINK=$(jq -r '.link' "$JSON_PATH")
+                STATUS=$(jq -r '.status' "$JSON_PATH")
+                BADGE="<img src='https://img.shields.io/badge/status-${STATUS}-green'>"
+                INLINE_SVG=$(cat "$SVG_PATH" | tr -d '\n')
+                CELL="<td><a href='$LINK'>$LINK</a><br>$BADGE<br>$INLINE_SVG</td>"
+              else
+                CELL="<td>❌ Missing</td>"
+              fi
+
+              echo "$CELL" >> summary.html
+            done
+            echo "</tr>" >> summary.html
+          done
+
+          echo "</table>" >> summary.html
+
+      - name: Show Summary
+        run: cat summary.html >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Minify summary.html
+        run: |
+            npm install -g html-minifier-terser
+            html-minifier-terser summary.html --collapse-whitespace --remove-comments --minify-css true --minify-js true -o summary.min.html
+
+      - name: Create or update PR comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          edit-mode: replace
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: summary.html
+        #   comment-id: ${{ steps.comment-id.outputs.comment-id }} # optional, if you use update logic
+
+
+      - name: Upload summary HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: summary-html
+          path: summary.html
+
+      - name: Upload summary HTML
+        uses: actions/upload-artifact@v4
+        with:
+            name: summary-min-html
+            path: summary.min.html

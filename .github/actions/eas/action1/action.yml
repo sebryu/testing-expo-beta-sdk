@@ -1,8 +1,21 @@
 name: 'Hello Action 1'
 description: 'Outputs a greeting from action 1'
+outputs:
+  version:
+    description: 'The version number calculated within the action'
+    value: ${{ steps.set-version.outputs.version }}
 
 runs:
   using: 'composite'
   steps:
     - run: echo "Hello from Action 1"
       shell: bash
+    - name: Set version
+      id: set-version
+      shell: bash
+      run: |
+        echo "version=1.2.0" >> $GITHUB_OUTPUT
+    - name: Print version
+      shell: bash
+      run: |
+        echo "The version is ${{ steps.set-version.outputs.version }}"
