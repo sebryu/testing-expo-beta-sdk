@@ -30,6 +30,21 @@ jobs:
               repo: context.repo.repo,
               sha: context.sha
             };
+            const cp = require("child_process");
+
+            function execCommand(command) {
+              return new Promise((resolve, reject) => {
+                cp.exec(command, (err, stdout, stderr) => {
+                  if (err) return reject(err);
+                  if (stderr) return reject(new Error(stderr));
+                  resolve(stdout);
+                });
+              });
+            }
+            const output = await execCommand(`git diff-tree --no-commit-id --name-only -r ${process.env.GITHUB_SHA}`);
+            const output2 = await execCommand(`git diff-tree --no-commit-id --name-only -r HEAD`);
+            console.log(`> Changed files:${process.env.GITHUB_SHA} -  ${output}`);
+            console.log(`> Changed files2: ${output2}`);
             # const something = await github.rest.git.createRef({
             #   ...refObject,
             #   ref: `refs/tags/mojtag/2${context.sha}`,
