@@ -130,6 +130,9 @@ jobs:
   three_summaries:
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [AppA, AppB, AppC]
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -144,10 +147,10 @@ jobs:
           echo "QR codes for the development builds are available below. Click to expand." >> "$COMMENT_BODY_FILE"
           echo "" >> "$COMMENT_BODY_FILE"
 
-          for app in AppA AppB AppC AppD; do
+          for app in ${{ matrix.app }}; do
             # Check if we have artifacts for this app to avoid empty details block
-            ios_svg="all_artifacts/result-ios-$app/qr-ios-$app.svg"
-            android_svg="all_artifacts/result-android-$app/qr-android-$app.svg"
+            ios_svg="artifacts/result-ios-$app/qr-ios-$app.svg"
+            android_svg="artifacts/result-android-$app/qr-android-$app.svg"
             if [[ ! -f "$ios_svg" && ! -f "$android_svg" ]]; then
               continue
             fi
@@ -159,8 +162,8 @@ jobs:
 
             # For iOS
             PLATFORM="ios"
-            SVG_PATH="all_artifacts/result-$PLATFORM-$app/qr-$PLATFORM-$app.svg"
-            JSON_PATH="all_artifacts/result-$PLATFORM-$app/result-$PLATFORM-$app.json"
+            SVG_PATH="artifacts/result-$PLATFORM-$app/qr-$PLATFORM-$app.svg"
+            JSON_PATH="artifacts/result-$PLATFORM-$app/result-$PLATFORM-$app.json"
             if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
               LINK=$(jq -r '.link' "$JSON_PATH")
               # Resize SVG and remove newlines
@@ -172,8 +175,8 @@ jobs:
 
             # For Android
             PLATFORM="android"
-            SVG_PATH="all_artifacts/result-$PLATFORM-$app/qr-$PLATFORM-$app.svg"
-            JSON_PATH="all_artifacts/result-$PLATFORM-$app/result-$PLATFORM-$app.json"
+            SVG_PATH="artifacts/result-$PLATFORM-$app/qr-$PLATFORM-$app.svg"
+            JSON_PATH="artifacts/result-$PLATFORM-$app/result-$PLATFORM-$app.json"
             if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
               LINK=$(jq -r '.link' "$JSON_PATH")
               # Resize SVG and remove newlines
@@ -187,5 +190,5 @@ jobs:
             echo "" >> "$COMMENT_BODY_FILE"
             echo "</details>" >> "$COMMENT_BODY_FILE"
             echo "" >> "$COMMENT_BODY_FILE"
-            echo "$COMMENT_BODY_FILE" >> "$GITHUB_STEP_SUMMARY"
+            cat $COMMENT_BODY_FILE >> "$GITHUB_STEP_SUMMARY"
           done
