@@ -8,6 +8,8 @@ on:
   workflow_dispatch:
   pull_request:
 
+runs-on: ubuntu-latest
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -76,8 +78,8 @@ jobs:
           for app in AppA AppB AppC AppD; do
             echo "<tr><th>$app</th>" >> summary.html
             for platform in ios android; do
-              SVG_PATH="all_artifacts/result-$platform-$app/qr-$platform-$app.svg"
-              JSON_PATH="all_artifacts/result-$platform-$app/result-$platform-$app.json"
+              SVG_PATH="artifacts/result-$platform-$app/qr-$platform-$app.svg"
+              JSON_PATH="artifacts/result-$platform-$app/result-$platform-$app.json"
 
               if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
                 LINK=$(jq -r '.link' "$JSON_PATH")
