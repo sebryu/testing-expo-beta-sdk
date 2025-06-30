@@ -63,7 +63,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: all_artifacts
+          path: artifacts
 
       - name: Generate HTML summary
         id: generate
@@ -126,3 +126,64 @@ jobs:
         with:
             name: summary-min-html
             path: summary.min.html
+
+  three_summaries:
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Generate Markdown Comment
+        id: markdown-comment
+        run: |
+          COMMENT_BODY_FILE="comment-body.md"
+          echo "## 🚀 Build Summary" > "$COMMENT_BODY_FILE"
+          echo "" >> "$COMMENT_BODY_FILE"
+          echo "QR codes for the development builds are available below. Click to expand." >> "$COMMENT_BODY_FILE"
+          echo "" >> "$COMMENT_BODY_FILE"
+
+          for app in AppA AppB AppC AppD; do
+            # Check if we have artifacts for this app to avoid empty details block
+            ios_svg="all_artifacts/result-ios-$app/qr-ios-$app.svg"
+            android_svg="all_artifacts/result-android-$app/qr-android-$app.svg"
+            if [[ ! -f "$ios_svg" && ! -f "$android_svg" ]]; then
+              continue
+            fi
+
+            echo "<details><summary>📱 QR Codes for $app</summary>" >> "$COMMENT_BODY_FILE"
+            echo "" >> "$COMMENT_BODY_FILE"
+            echo "| iOS | Android |" >> "$COMMENT_BODY_FILE"
+            echo "|:---:|:---:|" >> "$COMMENT_BODY_FILE"
+
+            # For iOS
+            PLATFORM="ios"
+            SVG_PATH="all_artifacts/result-$PLATFORM-$app/qr-$PLATFORM-$app.svg"
+            JSON_PATH="all_artifacts/result-$PLATFORM-$app/result-$PLATFORM-$app.json"
+            if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
+              LINK=$(jq -r '.link' "$JSON_PATH")
+              # Resize SVG and remove newlines
+              SVG_CONTENT=$(sed 's/<svg /<svg width="150" /' "$SVG_PATH" | tr -d '\n\r')
+              IOS_CELL="<a href='$LINK'>$SVG_CONTENT</a>"
+            else
+              IOS_CELL="❌ Missing"
+            fi
+
+            # For Android
+            PLATFORM="android"
+            SVG_PATH="all_artifacts/result-$PLATFORM-$app/qr-$PLATFORM-$app.svg"
+            JSON_PATH="all_artifacts/result-$PLATFORM-$app/result-$PLATFORM-$app.json"
+            if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
+              LINK=$(jq -r '.link' "$JSON_PATH")
+              # Resize SVG and remove newlines
+              SVG_CONTENT=$(sed 's/<svg /<svg width="150" /' "$SVG_PATH" | tr -d '\n\r')
+              ANDROID_CELL="<a href='$LINK'>$SVG_CONTENT</a>"
+            else
+              ANDROID_CELL="❌ Missing"
+            fi
+            
+            echo "|$IOS_CELL|$ANDROID_CELL|" >> "$COMMENT_BODY_FILE"
+            echo "" >> "$COMMENT_BODY_FILE"
+            echo "</details>" >> "$COMMENT_BODY_FILE"
+            echo "" >> "$COMMENT_BODY_FILE"
+            echo "$COMMENT_BODY_FILE" >> "$GITHUB_STEP_SUMMARY"
+          done
