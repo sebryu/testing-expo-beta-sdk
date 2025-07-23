@@ -63,6 +63,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: result-*
           path: artifacts
 
       - name: Generate HTML summary
@@ -192,3 +193,12 @@ jobs:
             echo "" >> "$COMMENT_BODY_FILE"
             cat $COMMENT_BODY_FILE >> "$GITHUB_STEP_SUMMARY"
           done
+
+      - name: Create or update PR comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          edit-mode: replace
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: comment-body.md
