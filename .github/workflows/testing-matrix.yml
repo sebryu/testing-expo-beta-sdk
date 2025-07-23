@@ -192,6 +192,7 @@ jobs:
             echo "</details>" >> "$COMMENT_BODY_FILE"
             echo "" >> "$COMMENT_BODY_FILE"
             cat $COMMENT_BODY_FILE >> "$GITHUB_STEP_SUMMARY"
+            wc -l $COMMENT_BODY_FILE
           done
 
       - name: Create or update PR comment
