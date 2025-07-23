@@ -63,7 +63,8 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: all_artifacts
+          pattern: result-*
+          path: artifacts
 
       - name: Generate HTML summary
         id: generate
@@ -76,8 +77,8 @@ jobs:
           for app in AppA AppB AppC AppD; do
             echo "<tr><th>$app</th>" >> summary.html
             for platform in ios android; do
-              SVG_PATH="all_artifacts/result-$platform-$app/qr-$platform-$app.svg"
-              JSON_PATH="all_artifacts/result-$platform-$app/result-$platform-$app.json"
+              SVG_PATH="artifacts/result-$platform-$app/qr-$platform-$app.svg"
+              JSON_PATH="artifacts/result-$platform-$app/result-$platform-$app.json"
 
               if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
                 LINK=$(jq -r '.link' "$JSON_PATH")
@@ -126,3 +127,79 @@ jobs:
         with:
             name: summary-min-html
             path: summary.min.html
+
+  three_summaries:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [AppA, AppB, AppC]
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Generate Markdown Comment
+        id: markdown-comment
+        run: |
+          COMMENT_BODY_FILE="comment-body.md"
+          echo "## 🚀 Build Summary" > "$COMMENT_BODY_FILE"
+          echo "" >> "$COMMENT_BODY_FILE"
+          echo "QR codes for the development builds are available below. Click to expand." >> "$COMMENT_BODY_FILE"
+          echo "" >> "$COMMENT_BODY_FILE"
+
+          for app in ${{ matrix.app }}; do
+            # Check if we have artifacts for this app to avoid empty details block
+            ios_svg="artifacts/result-ios-$app/qr-ios-$app.svg"
+            android_svg="artifacts/result-android-$app/qr-android-$app.svg"
+            if [[ ! -f "$ios_svg" && ! -f "$android_svg" ]]; then
+              continue
+            fi
+
+            echo "<details><summary>📱 QR Codes for $app</summary>" >> "$COMMENT_BODY_FILE"
+            echo "" >> "$COMMENT_BODY_FILE"
+            echo "| iOS | Android |" >> "$COMMENT_BODY_FILE"
+            echo "|:---:|:---:|" >> "$COMMENT_BODY_FILE"
+
+            # For iOS
+            PLATFORM="ios"
+            SVG_PATH="artifacts/result-$PLATFORM-$app/qr-$PLATFORM-$app.svg"
+            JSON_PATH="artifacts/result-$PLATFORM-$app/result-$PLATFORM-$app.json"
+            if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
+              LINK=$(jq -r '.link' "$JSON_PATH")
+              # Resize SVG and remove newlines
+              SVG_CONTENT=$(sed 's/<svg /<svg width="150" /' "$SVG_PATH" | tr -d '\n\r')
+              IOS_CELL="<a href='$LINK'>$SVG_CONTENT</a>"
+            else
+              IOS_CELL="❌ Missing"
+            fi
+
+            # For Android
+            PLATFORM="android"
+            SVG_PATH="artifacts/result-$PLATFORM-$app/qr-$PLATFORM-$app.svg"
+            JSON_PATH="artifacts/result-$PLATFORM-$app/result-$PLATFORM-$app.json"
+            if [[ -f "$SVG_PATH" && -f "$JSON_PATH" ]]; then
+              LINK=$(jq -r '.link' "$JSON_PATH")
+              # Resize SVG and remove newlines
+              SVG_CONTENT=$(sed 's/<svg /<svg width="150" /' "$SVG_PATH" | tr -d '\n\r')
+              ANDROID_CELL="<a href='$LINK'>$SVG_CONTENT</a>"
+            else
+              ANDROID_CELL="❌ Missing"
+            fi
+            
+            echo "|$IOS_CELL|$ANDROID_CELL|" >> "$COMMENT_BODY_FILE"
+            echo "" >> "$COMMENT_BODY_FILE"
+            echo "</details>" >> "$COMMENT_BODY_FILE"
+            echo "" >> "$COMMENT_BODY_FILE"
+            cat $COMMENT_BODY_FILE >> "$GITHUB_STEP_SUMMARY"
+            wc -l $COMMENT_BODY_FILE
+          done
+
+      - name: Create or update PR comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          edit-mode: replace
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: comment-body.md
